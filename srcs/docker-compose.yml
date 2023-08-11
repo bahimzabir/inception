@@ -1,0 +1,103 @@
+version: '3'
+
+services:
+  mariadb:
+    build: ./requirements/mariadb
+    container_name: mariadb
+    restart: always
+    networks:
+      - net
+    env_file:
+      - "./.env"
+    volumes:
+      - mariadb:/var/lib/mysql
+
+
+
+  wordpress:
+    build: ./requirements/wordpress
+    container_name: wordpress
+    restart: always
+    networks:
+      - net
+    env_file:
+      - "./.env"
+    depends_on:
+      - mariadb
+      - redis
+    volumes:
+      - wordpress:/var/www/html
+  
+  redis:
+    build: ./requirements/bonus/redis
+    container_name: redis
+    restart: always
+    networks:
+      - net
+
+  nginx:
+    build: ./requirements/nginx
+    container_name: nginx
+    restart: always
+    ports:
+      - "443:443"
+    networks:
+      - net
+    depends_on:
+      - wordpress
+    volumes:
+      - wordpress:/var/www/html
+
+  website:
+    build: ./requirements/bonus/website
+    container_name: website
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - net
+
+  adminer:
+    build: ./requirements/bonus/adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - net
+    depends_on:
+      - mariadb
+  
+  cadvisor:
+    build: ./requirements/bonus/cadvisor
+    container_name: cadvisor
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - nginx
+    networks:
+      - net
+    volumes:
+      - /:/rootfs
+      - /var/run:/var/run
+      - /sys:/sys
+      - /var/lib/docker/:/var/lib/docker
+  
+networks:
+  net:
+    driver: bridge
+
+volumes:
+  mariadb:
+    driver: local
+    driver_opts:
+      type : bind
+      o: bind
+      device: /home/azabir/data/db
+  wordpress:
+    driver: local
+    driver_opts:
+      type : bi
+      o: bind
+      device: /home/azabir/data/wp
